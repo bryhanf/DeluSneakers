@@ -1,30 +1,68 @@
 import customtkinter as ctk
 ctk.set_appearance_mode("light") 
-app = ctk.CTk()  #variable donde se guardará la ventana
 
+#COLORCITOS 
+FONDO = "#F6F2EE"
+TEXTO_SECUNDARIO = "#77726E"
+TARJETAS = "#CACBCD"
+BORDES = "#B3B9C1"
+BLOQUES_CLAROS = "#F2F2F2"
+ACENTO = "#7CB9F2"
+PRINCIPAL = "#323841"
+AZUL = "#2F80C8"
+
+app = ctk.CTk()  #variable donde se guardará la ventana
 app.geometry("1250x720")
 app.title("DeluSneakers.com") # configuracion inicial de la ventana
+app.configure(fg_color=FONDO)
+
+USUARIOS_DB = {
+    "usuario": {"password": "contraseña", "rol": "Cliente"},
+    "admin": {"password": "patas", "rol": "Administrador"}
+}
 
 ########### FUNCIONES ################
-def login():
-    print("login funciona")
+def cambiar_pantalla(pantalla_a_mostrar):
+    pantalla_tienda.grid_forget()
+    pantalla_login.grid_forget()
+    pantalla_a_mostrar.grid(row=0, column=0, sticky="nsew")
+
+def validar_login():
+    user = entry_usuario.get()
+    clave = entry_password.get()
+
+    login_correcto = False
+
+    if user in USUARIOS_DB:
+        datos = USUARIOS_DB[user]
+
+        if datos["password"] == clave:
+            login_correcto = True
+
+    if login_correcto:
+        rol = datos["rol"]
+        btn_login.configure(text=f"Perfil: {user}")
+        cambiar_pantalla(pantalla_tienda)
+    else:
+        lbl_mensaje_login.configure(text="Usuario o contraseña incorrectos", text_color="red") 
 
 def menu ():
     global menu_visible
 
     if menu_visible:
-        menu_lateral.grid_remove()
+        menu_lateral.place_forget()
         menu_visible = False
     else:
-        menu_lateral.grid()
+        menu_lateral.place(x=0, y=0, relheight=1)
+        menu_lateral.lift()
         menu_visible = True
 
 def crear_tarjeta(parent, producto, fila, columna):
-    tarjeta = ctk.CTkFrame( parent, corner_radius=10, height=300)
+    tarjeta = ctk.CTkFrame(parent, corner_radius=10, height=300, fg_color=BLOQUES_CLAROS, border_width=1, border_color=BORDES)
     tarjeta.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
 
     tarjeta.grid_propagate(False)
-    tarjeta.grid_columnconfigure(0,weight=1)
+    tarjeta.grid_columnconfigure(0, weight=1)
 
     imagen = ctk.CTkLabel(tarjeta, text=producto["imagen"], 
                           font=("Arial",60,"bold"))
@@ -51,12 +89,68 @@ def crear_tarjeta(parent, producto, fila, columna):
     disponibilidad.grid(row=5, column=0, padx=10, pady=5)
 
 def mostrar_productos(lista_productos):
+
+    # Limpiar catálogo
     for widget in catalogo.winfo_children():
         widget.destroy()
+
+    for columna in range(4):
+        catalogo.grid_columnconfigure(columna, weight=1)
+
+    # BANNER SUPERIOR
+    banner = ctk.CTkFrame(catalogo,height=170,corner_radius=12,fg_color="#323841")
+    banner.grid(row=0,column=0,columnspan=4,padx=15,pady=15,sticky="ew")
+    banner.grid_propagate(False)
+
+    texto_banner = ctk.CTkLabel(banner,text="DEJA HUELLA",font=("Arial", 28, "bold"),text_color="white",justify="left")
+    texto_banner.grid(row=0, column=0, padx=30, pady=(20, 0), sticky="w")
+
+    texto_banner_2 = ctk.CTkLabel(banner,text="CON CADA PISADA.",font=("Arial", 28, "bold"),text_color=ACENTO,justify="left")
+    texto_banner_2.grid(row=1, column=0, padx=30, pady=0, sticky="w")
+
+    descripcion_banner = ctk.CTkLabel(banner,text="Y encuentra tu par (te hacemos descuento)",text_color="white")
+    descripcion_banner.grid(row=2, column=0, padx=30, pady=(5, 15), sticky="w")
+
+    # TITULO DEBAJO DEL BANNER
+    titulo_catalogo = ctk.CTkLabel(catalogo, text="Nuestros productos",
+                                   font=("Arial", 24, "bold"))
+    titulo_catalogo.grid(row=1, column=0, columnspan=4, sticky="w", padx=20, pady=(5, 10))
+
+    # PRODUCTOS
+    if len(lista_productos) == 0:
+        mensaje = ctk.CTkLabel(
+            catalogo,
+            text="No encontramos tenis :(",
+            font=("Arial", 18, "bold")
+        )
+        mensaje.grid(row=2, column=0, columnspan=4, pady=30)
+
     for i, producto in enumerate(lista_productos):
-        fila = i // 4
+        fila = (i // 4) + 2
         columna = i % 4
         crear_tarjeta(catalogo, producto, fila, columna)
+
+    # BANNER INFERIOR PEQUEÑO
+    fila_banner = ((len(lista_productos) + 3) // 4) + 2
+
+    banner_inferior = ctk.CTkFrame(catalogo,height=75,corner_radius=10,fg_color="#7CB9F2")
+    banner_inferior.grid(row=fila_banner,
+        column=0,
+        columnspan=4,
+        padx=15,
+        pady=20,
+        sticky="ew"
+    )
+    banner_inferior.grid_propagate(False)
+
+    texto_inferior = ctk.CTkLabel(
+        banner_inferior,
+        text="✨ DELUSNEAKERS | ¡Encuentra tu próximo par!",
+        font=("Arial", 16, "bold"),
+        text_color="#323841"
+    )
+    texto_inferior.place(relx=0.5, rely=0.5, anchor="center")
+
 
 def buscar_productos():
     texto = buscar.get().lower()
@@ -65,6 +159,7 @@ def buscar_productos():
     for producto in productos:
         if texto in producto["nombre"].lower() or texto in producto["marca"].lower():
             resultados.append(producto)
+
     mostrar_productos(resultados)
     ############################
 
@@ -74,12 +169,12 @@ app.grid_columnconfigure(0, weight=1)
 ######################################################################
 #Encabezado:
 encabezado = ctk.CTkFrame(app, height=60, corner_radius=0)
-encabezado.grid(row= 0, column = 0, sticky="ew", padx=10, pady=10) #va en la fila 0
+encabezado.grid(row=0, column=0, sticky="ew", padx=10, pady=10) #va en la fila 0
 encabezado.grid_columnconfigure(0, weight=0) 
 encabezado.grid_columnconfigure(1, weight=0) 
 encabezado.grid_columnconfigure(2, weight=1)
 encabezado.grid_columnconfigure(3, weight=0)
-
+encabezado.configure(fg_color=BLOQUES_CLAROS)
 
 cuadro_busqueda = ctk.CTkFrame(encabezado, fg_color="transparent")
 cuadro_busqueda.grid(row=0, column=1, padx=20, pady=10, sticky="ew")
@@ -87,78 +182,93 @@ cuadro_busqueda.grid_columnconfigure(0, weight=1)
 
 ######################################################################
 
-btn_menu = ctk.CTkButton (encabezado, text="Menu", width=45, command=menu)
+btn_menu = ctk.CTkButton(encabezado, text="Menu", width=45, command=menu)
 btn_menu.grid(row=0, column=0, padx=10, pady=10)
 
 buscar = ctk.CTkEntry(cuadro_busqueda, placeholder_text="Buscale :p", height=35)
-buscar.grid(row = 0, column = 1, padx = 10, pady=10)
+buscar.grid(row=0, column=1, padx=10, pady=10)
 
-btn_buscar = ctk.CTkButton(cuadro_busqueda, text="🔎", width= 30, command=buscar_productos)
-btn_buscar.grid(row=0, column = 2)
+buscar.bind("<Return>", lambda event: buscar_productos())
 
 titulo = ctk.CTkLabel(encabezado, text="DeluSneakers", 
-                      font=("Arial", 24, "bold") )
-titulo.grid(row = 0, column = 3, padx=10, pady=10)
+                      font=("Arial", 24, "bold"))
+titulo.grid(row=0, column=2, padx=10, pady=10)
 
-btn_login = ctk.CTkButton(encabezado, text="Iniciar sesion", width= 60, command=login)
-btn_login.grid(row=0, column =4, padx=10, pady=10)
+btn_login = ctk.CTkButton(encabezado, text="Iniciar sesion", width=60, command=lambda: cambiar_pantalla(pantalla_login))
+btn_login.configure(fg_color=PRINCIPAL, hover_color=AZUL, text_color="white")
+btn_login.grid(row=0, column=4, padx=10, pady=10)
 
 ########################################################
 #Cuerpo:
-cuerpo = ctk.CTkFrame(app, corner_radius=0, fg_color= "transparent")
-cuerpo.grid(row=1, column=0, sticky= "nsew", padx=10, pady=(0,10) )#va en la fila 1
-cuerpo.grid_columnconfigure(1, weight=1)
+cuerpo = ctk.CTkFrame(app, corner_radius=0, fg_color="transparent")
+cuerpo.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0,10)) #va en la fila 1
+cuerpo.grid_columnconfigure(0, weight=1)
 cuerpo.grid_rowconfigure(0, weight=1)
-##########################################################
 
-#### MENU A LA IZQUIERDA   #############################
-menu_lateral = ctk.CTkFrame(cuerpo, width=190, corner_radius=10)
-menu_lateral.grid(row=0, column=0, sticky="ns", padx=(0,10))
-menu_lateral.grid_remove()
-menu_lateral.grid_propagate(False)
-
-
-opciones = ["Marcas","Tallas","Tipo","Rebajas"]
-
-for i, opcion in enumerate(opciones):
-
-    boton = ctk.CTkButton(menu_lateral,text=opcion,anchor="w")
-    boton.grid(row=i,column=0,padx=10,pady=8,sticky="ew")
 ##########################################################
 
 ################# CONTENIDO A LA DERECHA ######
 contenido = ctk.CTkFrame(cuerpo, corner_radius=10)
-contenido.grid (row = 0, column = 1, sticky = "nsew")
-contenido.grid_columnconfigure(0,weight=1)
-contenido.grid_rowconfigure(1,weight=1)
+contenido.configure(fg_color=BLOQUES_CLAROS)
+contenido.grid(row=0, column=0, sticky="nsew")
+contenido.grid_columnconfigure(0, weight=1)
+contenido.grid_rowconfigure(0, weight=1)
+
 pantalla_tienda = ctk.CTkFrame(contenido, fg_color="transparent")
-pantalla_tienda.grid(row=0, column=0, sticky ="nsew")
-pantalla_login = ctk.CTkFrame(contenido)
+pantalla_tienda.grid(row=0, column=0, sticky="nsew")
 
+pantalla_login = ctk.CTkFrame(contenido, fg_color="transparent")
 
-#banner simulado en lo que le metemos imagenes :)
-banner = ctk.CTkFrame(pantalla_tienda,height=150, corner_radius=12,fg_color="#323841")
-banner.grid(row=0,column=0,padx=15,pady=15,sticky="ew")
-banner.grid_propagate(False)
+tarjeta_login = ctk.CTkFrame(pantalla_login, width=380, height=480, corner_radius=20,
+                             fg_color=FONDO, border_width=2, border_color=PRINCIPAL)
+tarjeta_login.place(relx=0.5, rely=0.5, anchor="center")
+tarjeta_login.pack_propagate(False)
 
-texto_banner = ctk.CTkLabel(banner,text="ENSEÑAME LAS PATAS :)\nXFA.",font=("Arial", 28, "bold"),text_color="white",justify="left")
-texto_banner.grid(row=0,column=0,padx=30,pady=20,sticky="w")
-descripcion_banner = ctk.CTkLabel(banner,text="Y encuentra tu par (te hacemos descuento)",text_color="white")
-descripcion_banner.grid(row=1,column=0,padx=30,pady=(0, 15),sticky="w")
+lbl_icono = ctk.CTkLabel(tarjeta_login, text="👟", font=("Arial", 60))
+lbl_icono.pack(pady=(30, 0))
 
+lbl_titulo_login = ctk.CTkLabel(tarjeta_login, text="Iniciar Sesión", text_color=PRINCIPAL,
+                                font=("Arial", 28, "bold"))
+lbl_titulo_login.pack(pady=(5, 0))
+
+lbl_subtitulo = ctk.CTkLabel(tarjeta_login, text="Bienvenido de vuelta, ya quiero ver tus patas",
+                             text_color=TEXTO_SECUNDARIO, font=("Arial", 13))
+lbl_subtitulo.pack(pady=(0, 20))
+
+entry_usuario = ctk.CTkEntry(tarjeta_login, placeholder_text="Usuario",
+                             width=280, height=40, corner_radius=10, border_width=2,
+                             fg_color=BLOQUES_CLAROS, border_color=BORDES)
+entry_usuario.pack(pady=8)
+
+entry_password = ctk.CTkEntry(tarjeta_login, placeholder_text="Contraseña", show="*",
+                              width=280, height=40, corner_radius=10, border_width=2,
+                              fg_color=BLOQUES_CLAROS, border_color=BORDES)
+entry_password.pack(pady=8)
+entry_password.bind("<Return>", lambda event: validar_login())
+
+lbl_mensaje_login = ctk.CTkLabel(tarjeta_login, text="", font=("Arial", 12))
+lbl_mensaje_login.pack(pady=5)
+
+btn_ingresar = ctk.CTkButton(tarjeta_login, text="Ingresar", command=validar_login,
+                             width=280, height=42, corner_radius=10,
+                             fg_color=PRINCIPAL, hover_color=AZUL, text_color="white",
+                             font=("Arial", 14, "bold"))
+btn_ingresar.pack(pady=(10, 8))
+
+btn_volver = ctk.CTkButton(tarjeta_login, text="Volver a la Tienda",
+                           command=lambda: cambiar_pantalla(pantalla_tienda),
+                           width=280, height=38, corner_radius=10,
+                           fg_color="transparent", border_width=2, border_color=BORDES,
+                           text_color=PRINCIPAL, hover_color=BLOQUES_CLAROS)
+btn_volver.pack(pady=5)
 
 ##########################################################
 #productos:
-titulo_catalogo = ctk.CTkLabel(pantalla_tienda, text="Nuestros productos", 
-                      font=("Arial", 24, "bold") )
-titulo_catalogo.grid(row= 1, column = 0, sticky="w", padx=20, pady=20)
-
 catalogo = ctk.CTkScrollableFrame(pantalla_tienda)
-catalogo.grid(row= 2, column=0, sticky = "nsew")
+catalogo.grid(row=0, column=0, sticky="nsew")
+
 pantalla_tienda.grid_columnconfigure(0, weight=1)
-pantalla_tienda.grid_rowconfigure(2, weight=1)
-
-
+pantalla_tienda.grid_rowconfigure(0, weight=1)
 
 productos = [
     {"nombre": "Air Force 1", "marca": "Nike", "talla": 27, "precio": 2399,"imagen": "👟"},
@@ -172,11 +282,57 @@ productos = [
     {"nombre": "Gel-1130", "marca": "Asics", "talla": 27, "precio": 1899,"imagen": "👟"},
     {"nombre": "Blazer mid '77", "marca": "Nike", "talla": 27, "precio": 2099,"imagen": "👟"},
     {"nombre": "Chuck Taylor All Star", "marca": "Converse", "talla": 28, "precio": 129,"imagen": "👟"},
-    {"nombre": "MB-03", "marca": "Puma", "talla": 27, "precio": 2499,"imagen": "👟"} ]
+    {"nombre": "MB-03", "marca": "Puma", "talla": 27, "precio": 2499,"imagen": "👟"}
+]
 
-for columna in range (4):
-    catalogo.grid_columnconfigure(columna, weight=1)
+#### MENU A LA IZQUIERDA   #############################
+menu_lateral = ctk.CTkFrame(cuerpo, width=250, corner_radius=10)
+menu_lateral.configure(fg_color=TARJETAS, border_color=BORDES)
+menu_lateral.grid_propagate(False)
+menu_lateral.grid_columnconfigure(0, weight=1)
+
+encabezado_menu = ctk.CTkFrame(menu_lateral, fg_color="transparent")
+encabezado_menu.grid(row=0, column=0, padx=10, pady=(10,0), sticky="ew")
+encabezado_menu.grid_columnconfigure(0, weight=1)
+
+titulo_menu = ctk.CTkLabel(encabezado_menu, text="MENÚ", text_color=PRINCIPAL,
+                           font=("Arial", 14, "bold"))
+titulo_menu.grid(row=0, column=0, padx=5, sticky="w")
+
+btn_cerrar = ctk.CTkButton(encabezado_menu, text="✕", width=28, height=28, corner_radius=14,
+                           fg_color=PRINCIPAL, hover_color=AZUL, text_color="white", command=menu)
+btn_cerrar.grid(row=0, column=1)
+
+secciones = [
+    ("GÉNERO", ["Hombre","Mujer","Niños"]),
+    ("EXPLORAR", ["Marcas","Tallas","Tipo (running, casual, skate)"])
+]
+
+fila_menu = 1
+
+for nombre_seccion, opciones in secciones:
+
+    etiqueta = ctk.CTkLabel(menu_lateral, text=nombre_seccion, text_color=TEXTO_SECUNDARIO,
+                            font=("Arial", 10, "bold"))
+    etiqueta.grid(row=fila_menu, column=0, padx=15, pady=(15,0), sticky="w")
+    fila_menu += 1
+
+    for opcion in opciones:
+
+        boton = ctk.CTkButton(menu_lateral, text=opcion + "   ›", anchor="w",
+                              fg_color="transparent", hover_color=BLOQUES_CLAROS,
+                              text_color=PRINCIPAL)
+        boton.grid(row=fila_menu, column=0, padx=10, pady=4, sticky="ew")
+        fila_menu += 1
+
+boton_rebajas = ctk.CTkButton(menu_lateral, text="Rebajas   %", anchor="w",
+                              fg_color=ACENTO, hover_color=AZUL, text_color=PRINCIPAL,
+                              font=("Arial", 12, "bold"))
+boton_rebajas.grid(row=fila_menu, column=0, padx=10, pady=(20,8), sticky="ew")
+
+##########################################################
 
 menu_visible = False
 mostrar_productos(productos)
+
 app.mainloop()
